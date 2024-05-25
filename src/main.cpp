@@ -1,16 +1,17 @@
 #include <Arduino.h>
 #include <memory>
+#include <WiFiManager.h>
 
+#include "constants.h"
 #include "expansion_eeprom.h"
-#include "DS18B20.h"
+#include "sensors/DS18B20.h"
 #include "utils.h"
 
 std::unique_ptr<ExpansionEeprom> eeprom;
-std::unique_ptr<DS18B20> ds18b20;
+std::unique_ptr<Sensor> attachedSensor;
+std::unique_ptr<WiFiManager> wifiManager;
 
-enum eeprom_addr_t {
-    TEST_DATA = 12
-};
+// #define FLASH_SENSOR_TYPE SENSOR_TYPE_DS18B20
 
 void setup()
 {
@@ -18,20 +19,26 @@ void setup()
     eeprom = std::unique_ptr<ExpansionEeprom>{
         new ExpansionEeprom { ExpansionEeprom::DEFAULT_ADDR, GPIO_NUM_19, GPIO_NUM_18 } };
 
-    ds18b20 = std::unique_ptr<DS18B20>{ new DS18B20 { GPIO_NUM_14 } };
+    wifiManager = std::unique_ptr<WiFiManager>{ new WiFiManager {} };
+    wifiManager->autoConnect();
 
+    #ifdef FLASH_SENSOR_TYPE
+    eeprom->write(EEPROM_ADDR_SENSOR_TYPE, FLASH_SENSOR_TYPE);
+    #endif
+
+    // Choose sensor
+    if (auto [ available, data ] = eeprom->read(EEPROM_ADDR_SENSOR_TYPE);
+            available && data == SENSOR_TYPE_DS18B20) {
+        attachedSensor = std::unique_ptr<DS18B20> { new DS18B20 { GPIO_NUM_14 } };
+    }
+
+    attachedSensor->init();
     Serial.begin(115200);
-    eeprom->write(TEST_DATA, 69);
 }
 
 void loop()
 {
     delay(500);
-
-    if (auto [ available, data ] = eeprom->read(TEST_DATA); available)
-    {
-        Serial.println(static_cast<int>(data));
-    }
-
-    Serial.println(ds18b20->getTemperature());
+    attachedSensor->update();
+    Serial.println(attachedSensor->getValue());
 }
