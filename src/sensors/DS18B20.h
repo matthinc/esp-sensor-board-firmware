@@ -5,6 +5,7 @@
 
 #include "sensor.h"
 
+
 class DS18B20 : public Sensor {
 public:
     explicit DS18B20(gpio_num_t gpio);

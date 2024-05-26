@@ -6,12 +6,15 @@
 #include "expansion_eeprom.h"
 #include "sensors/DS18B20.h"
 #include "utils.h"
+#include "SensorRegistry.h"
 
 std::unique_ptr<ExpansionEeprom> eeprom;
 std::unique_ptr<Sensor> attachedSensor;
 std::unique_ptr<WiFiManager> wifiManager;
 
 // #define FLASH_SENSOR_TYPE SENSOR_TYPE_DS18B20
+
+std::unique_ptr<SensorRegistry> registry = std::unique_ptr<SensorRegistry> { new SensorRegistry() } ;
 
 void setup()
 {
@@ -28,8 +31,10 @@ void setup()
 
     // Choose sensor
     if (auto [ available, data ] = eeprom->read(EEPROM_ADDR_SENSOR_TYPE);
-            available && data == SENSOR_TYPE_DS18B20) {
-        attachedSensor = std::unique_ptr<DS18B20> { new DS18B20 { GPIO_NUM_14 } };
+            available && registry->hasSensor(data) ) {
+        auto [ret, attachedSensor] = registry->createSensor(data);
+    } else {
+        // todo: Open webserver to allow user to flash sensor type 
     }
 
     attachedSensor->init();
