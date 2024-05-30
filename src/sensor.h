@@ -13,6 +13,7 @@ public:
     virtual std::uint64_t getSleepTime() const = 0;
 };
 
+
 class Sensor
 {
 public:
