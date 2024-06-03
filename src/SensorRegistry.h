@@ -2,6 +2,7 @@
 #include <map>
 #include <functional>
 #include <memory>
+#include <utility>
 
 #include "sensor.h"
 
@@ -12,7 +13,7 @@ public:
     Registry() = default;
 
     bool hasKey(const KeyType key) const;
-    std::unique_ptr<RegisterType> createItem(const KeyType key);
+    std::tuple<bool, std::unique_ptr<RegisterType>> createItem(const KeyType key);
     bool registerItem(const KeyType key, CtorFunction ctor);
     int size() const {return registry.size();}
 
@@ -36,14 +37,14 @@ bool Registry<KeyType, RegisterType, CtorFunction>::hasKey(const KeyType  key) c
 }
 
 template<class KeyType, class RegisterType, class CtorFunction>
-std::unique_ptr<RegisterType>
+std::tuple<bool, std::unique_ptr<RegisterType>>
 Registry<KeyType, RegisterType, CtorFunction>::createItem(const KeyType key)
 {
     if ( auto e = this->registry.find(key); e != this->registry.end()){
-        return e->second();
-    } 
+        return {true, std::move(e->second())};
+    }
 
-    return  std::unique_ptr<RegisterType>(nullptr);
+    return  { false, std::move(std::unique_ptr<RegisterType>(nullptr))};
 }
 
 template<class KeyType, class RegisterType, class CtorFunction>
@@ -55,7 +56,7 @@ bool Registry<KeyType, RegisterType, CtorFunction>::registerItem(
 }
 
 // class SensorRegisterHelper {
-    
+
 // public:
 //     SensorRegisterHelper() {};
 

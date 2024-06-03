@@ -27,16 +27,16 @@ void setup()
     Serial.printf("pointer: %d\n", (int)&sleeperRegistry);
     sensorRegistry->registerItem(
         SENSOR_TYPE_DS18B20,
-        []() { 
+        []() {
                 Serial.printf("create sensor\n");
-                return std::unique_ptr<DS18B20> { new DS18B20 { GPIO_NUM_14 } }; 
+                return std::unique_ptr<DS18B20> { new DS18B20 { GPIO_NUM_14 } };
         }
-    );   
+    );
     sleeperRegistry->registerItem(
         SLEEP_TYPE_INTERVAL,
-        []() { 
+        []() {
                 Serial.printf("create sleeper\n");
-                return std::unique_ptr<IntervalSleeper> { new IntervalSleeper { 5 } }; 
+                return std::unique_ptr<IntervalSleeper> { new IntervalSleeper { 5 } };
         }
     );
 
@@ -54,32 +54,33 @@ void setup()
     #endif
 
     // Choose sensor
+    bool ret;
     if (auto [ available, data ] = eeprom->read(EEPROM_ADDR_SENSOR_TYPE);
             available && sensorRegistry->hasKey(data) ) {
-        attachedSensor = sensorRegistry->createItem(data);
-        if (attachedSensor){
+        std::tie(ret, attachedSensor) = sensorRegistry->createItem(data);
+        if (ret){
             Serial.println("all good for sensor");
         } else {
             Serial.println("error creating sensor");
         }
         attachedSensor->init();
     } else {
-        // todo: Open webserver to allow user to flash sensor type 
+        // todo: Open webserver to allow user to flash sensor type
         Serial.println("No sensor found  open webserver");
     }
-    
+
     // Choose sleeper
     if (auto data = SLEEP_TYPE_INTERVAL;
             data>0 && sleeperRegistry->hasKey(data) ) {
         Serial.println("found sleeper in registry. create one");
-        sleeper = sleeperRegistry->createItem(data);
-        if (sleeper){
+        std::tie(ret, sleeper) = sleeperRegistry->createItem(data);
+        if (ret){
             Serial.println("all good for sleeper");
         } else {
             Serial.println("error creating sleeper");
         }
     } else {
-        // todo: Open webserver to allow user to flash sensor type 
+        // todo: Open webserver to allow user to flash sensor type
         Serial.println("No sleeper found  open webserver");
     }
 
