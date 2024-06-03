@@ -8,17 +8,20 @@
 #include "sensors/DS18B20.h"
 #include "sleep_behaviors/IntervalSleeper.h"
 #include "utils.h"
+#include "mqtt.h"
 
 std::unique_ptr<ExpansionEeprom> eeprom;
 std::unique_ptr<Sensor> attachedSensor;
 std::unique_ptr<SleepBehavior> sleeper;
 std::unique_ptr<WiFiManager> wifiManager;
+std::unique_ptr<Mqtt> mqtt;
 
 // #define FLASH_SENSOR_TYPE SENSOR_TYPE_DS18B20
 
 std::unique_ptr<SensorRegistry> sensorRegistry = std::unique_ptr<SensorRegistry> { new SensorRegistry() } ;
 std::unique_ptr<SleepBehaviorRegistry> sleeperRegistry = std::unique_ptr<SleepBehaviorRegistry> { new SleepBehaviorRegistry() } ;
 
+WiFiClient client;
 
 void setup()
 {
@@ -40,13 +43,28 @@ void setup()
         }
     );
 
-
     // Initialize Hardware
     eeprom = std::unique_ptr<ExpansionEeprom>{
         new ExpansionEeprom { ExpansionEeprom::DEFAULT_ADDR, GPIO_NUM_19, GPIO_NUM_18 } };
 
-    // wifiManager = std::unique_ptr<WiFiManager>{ new WiFiManager {} };
-    // wifiManager->autoConnect();
+    // Wifi
+    wifiManager = std::unique_ptr<WiFiManager>{ new WiFiManager {} };
+
+    auto mqttServerHost = WiFiManagerParameter{"mqtt_server", "Mqtt Server", "91.121.93.94", 32};
+    wifiManager->addParameter(&mqttServerHost);
+
+    auto mqttBaseTopic = WiFiManagerParameter{"base_topic", "Base Topic", "sensor_board", 32};
+    wifiManager->addParameter(&mqttBaseTopic);
+
+    wifiManager->autoConnect();
+
+    // Init Mqtt
+    mqtt = std::unique_ptr<Mqtt>{
+        new Mqtt{
+            {mqttServerHost.getValue()},
+            {"ESP32_" + std::to_string(ESP.getEfuseMac())},
+            {mqttBaseTopic.getValue()},
+            client }};
 
     #ifdef FLASH_SENSOR_TYPE
     eeprom->write(EEPROM_ADDR_SENSOR_TYPE, FLASH_SENSOR_TYPE);
@@ -96,7 +114,11 @@ void loop()
     auto sleep =  sleeper->getSleepTime();
     // auto sleep =  500;
     Serial.printf("sleep for %d ms\n",sleep);
-    delay((uint32_t)sleep);
+
     attachedSensor->update();
     Serial.println(attachedSensor->getValue());
+    mqtt->publish("matthi", attachedSensor->getValue());
+    mqtt->loop();
+
+    delay((uint32_t)sleep);
 }
