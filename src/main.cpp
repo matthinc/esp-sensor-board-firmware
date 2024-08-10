@@ -53,6 +53,12 @@ void setup()
     auto mqttServerHost = WiFiManagerParameter{"mqtt_server", "Mqtt Server", "91.121.93.94", 32};
     wifiManager->addParameter(&mqttServerHost);
 
+    auto mqttUsername = WiFiManagerParameter{"mqtt_user", "Mqtt Username", "", 32};
+    wifiManager->addParameter(&mqttUsername);
+
+    auto mqttPassword = WiFiManagerParameter{"mqtt_password", "Mqtt Password", "", 32};
+    wifiManager->addParameter(&mqttPassword);
+
     auto mqttBaseTopic = WiFiManagerParameter{"base_topic", "Base Topic", "sensor_board", 32};
     wifiManager->addParameter(&mqttBaseTopic);
 
@@ -62,6 +68,8 @@ void setup()
     mqtt = std::unique_ptr<Mqtt>{
         new Mqtt{
             {mqttServerHost.getValue()},
+            {mqttUsername.getValue()},
+            {mqttPassword.getValue()},
             {"ESP32_" + std::to_string(ESP.getEfuseMac())},
             {mqttBaseTopic.getValue()},
             client }};

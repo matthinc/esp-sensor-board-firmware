@@ -10,7 +10,13 @@
 
 class Mqtt {
 public:
-    Mqtt(std::string  host, std::string clientId, std::string baseTopic, WiFiClient& net);
+    Mqtt(
+            std::string host,
+            std::string username,
+            std::string password,
+            std::string clientId,
+            std::string baseTopic,
+            WiFiClient& net);
     virtual ~Mqtt() = default;
 
     // No variants :(
@@ -26,6 +32,8 @@ protected:
 
 private:
     std::string host;
+    std::string username;
+    std::string password;
     std::string clientId;
     std::string baseTopic;
 

@@ -6,8 +6,16 @@
 
 #include <utility>
 
-Mqtt::Mqtt(std::string host, std::string clientId, std::string baseTopic, WiFiClient& net)
+Mqtt::Mqtt(
+        std::string host,
+        std::string username,
+        std::string password,
+        std::string clientId,
+        std::string baseTopic,
+        WiFiClient& net)
     : host {std::move( host )}
+    , username {std::move(username)}
+    , password {std::move(password)}
     , clientId {std::move( clientId )}
     , baseTopic {std::move( baseTopic )}
     , client()
@@ -41,7 +49,7 @@ void Mqtt::messageReceived(String &topic, String &payload)
 bool Mqtt::reconnect() {
     int reconnectAttempts = 0;
 
-    while (!client.connect(clientId.c_str()))
+    while (!client.connect(clientId.c_str(), username.c_str(), password.c_str()))
     {
         delay(500);
         if (reconnectAttempts++ > 10)
