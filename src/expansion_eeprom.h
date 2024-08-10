@@ -9,9 +9,14 @@ public:
     ExpansionEeprom(int addr, gpio_num_t sda, gpio_num_t scl);
     virtual ~ExpansionEeprom() = default;
 
-    void write(char daddr, char data) const;
+    int write(int daddr, char data) const;
+    int write(int daddr, int data) const;
+
     // Optional is only available in c++ 17+
-    std::tuple<bool, char> read(char daddr) const;
+    std::tuple<bool, char> read(int daddr) const;
+    std::tuple<bool, int> readInt(int daddr) const;
+
+
 
     // Docs
     static const int DEFAULT_ADDR = 0b1010000;

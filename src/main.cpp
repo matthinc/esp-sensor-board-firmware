@@ -8,17 +8,18 @@
 #include "expansion_eeprom.h"
 #include "sensors/DS18B20.h"
 #include "sleep_behaviors/IntervalSleeper.h"
+#include "SensorData.h"
 #include "utils.h"
 #include "mqtt.h"
 #include "esp_eeprom.h"
 
-std::unique_ptr<ExpansionEeprom> eeprom;
+std::shared_ptr<ExpansionEeprom> eeprom;
 std::unique_ptr<Sensor> attachedSensor;
 std::unique_ptr<SleepBehavior> sleeper;
 std::unique_ptr<WiFiManager> wifiManager;
 std::unique_ptr<Mqtt> mqtt;
 
-// #define FLASH_SENSOR_TYPE SENSOR_TYPE_DS18B20
+#define FLASH_SENSOR_TYPE SENSOR_TYPE_DS18B20
 
 std::unique_ptr<SensorRegistry> sensorRegistry = std::unique_ptr<SensorRegistry> { new SensorRegistry() } ;
 std::unique_ptr<SleepBehaviorRegistry> sleeperRegistry = std::unique_ptr<SleepBehaviorRegistry> { new SleepBehaviorRegistry() } ;
@@ -49,8 +50,7 @@ void setup()
     );
 
     // Initialize Hardware
-    eeprom = std::unique_ptr<ExpansionEeprom>{
-        new ExpansionEeprom { ExpansionEeprom::DEFAULT_ADDR, GPIO_NUM_19, GPIO_NUM_18 } };
+    eeprom = std::make_shared<ExpansionEeprom>( ExpansionEeprom::DEFAULT_ADDR, GPIO_NUM_19, GPIO_NUM_18 );
 
     // Wifi
     wifiManager = std::unique_ptr<WiFiManager>{ new WiFiManager {} };
@@ -96,9 +96,15 @@ void setup()
             client }};
 
     #ifdef FLASH_SENSOR_TYPE
-    eeprom->write(EEPROM_ADDR_SENSOR_TYPE, FLASH_SENSOR_TYPE);
+    SensorHeader h{SENSOR_TYPE_DS18B20, SLEEP_TYPE_INTERVAL, 100, 131415};
+    writeSensorHeaderToEeprom(h, eeprom);
     Serial.println("write sensor id to eprom");
+    h.print();
     #endif
+
+    SensorHeader header = readSensorHeader(eeprom);
+    header.print();
+
 
     // Choose sensor
     bool ret;
