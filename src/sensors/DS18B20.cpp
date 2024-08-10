@@ -24,9 +24,3 @@ bool DS18B20::hasValue() const {
 double DS18B20::getValue() const {
     return lastReading;
 }
-
-// does not work
-// static bool __sensor_registered =  SensorRegisterHelper::registerSensor(
-//     SENSOR_TYPE_DS18B20,
-//     []() { return std::unique_ptr<DS18B20> { new DS18B20 { GPIO_NUM_14 } }; }
-// );
