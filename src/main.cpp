@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <memory>
 #include <WiFiManager.h>
+#include <EEPROM.h>
 
 #include "SensorRegistry.h"
 #include "constants.h"
@@ -9,6 +10,7 @@
 #include "sleep_behaviors/IntervalSleeper.h"
 #include "utils.h"
 #include "mqtt.h"
+#include "esp_eeprom.h"
 
 std::unique_ptr<ExpansionEeprom> eeprom;
 std::unique_ptr<Sensor> attachedSensor;
@@ -25,6 +27,9 @@ WiFiClient client;
 
 void setup()
 {
+    pinMode(5, OUTPUT);
+    ledOn();
+
     Serial.begin(115200);
     Serial.printf("Init...\n");
     Serial.printf("pointer: %d\n", (int)&sleeperRegistry);
@@ -50,7 +55,7 @@ void setup()
     // Wifi
     wifiManager = std::unique_ptr<WiFiManager>{ new WiFiManager {} };
 
-    auto mqttServerHost = WiFiManagerParameter{"mqtt_server", "Mqtt Server", "91.121.93.94", 32};
+    auto mqttServerHost = WiFiManagerParameter{"mqtt_server", "Mqtt Server", "185.244.192.40", 32};
     wifiManager->addParameter(&mqttServerHost);
 
     auto mqttUsername = WiFiManagerParameter{"mqtt_user", "Mqtt Username", "", 32};
@@ -59,19 +64,35 @@ void setup()
     auto mqttPassword = WiFiManagerParameter{"mqtt_password", "Mqtt Password", "", 32};
     wifiManager->addParameter(&mqttPassword);
 
-    auto mqttBaseTopic = WiFiManagerParameter{"base_topic", "Base Topic", "sensor_board", 32};
+    auto mqttBaseTopic = WiFiManagerParameter{"base_topic", "Base Topic", "", 32};
     wifiManager->addParameter(&mqttBaseTopic);
 
     wifiManager->autoConnect();
 
+    EspEeprom eepromWrapper {
+            { "mqtt_host", 32 },
+            { "mqtt_username", 32 },
+            { "mqtt_password", 32 },
+            { "mqtt_topic", 32 },
+    };
+
+    if (!std::string{ mqttUsername.getValue() }.empty())
+    {
+        eepromWrapper.storeValue("mqtt_host", mqttServerHost.getValue());
+        eepromWrapper.storeValue("mqtt_username", mqttUsername.getValue());
+        eepromWrapper.storeValue("mqtt_password", mqttPassword.getValue());
+        eepromWrapper.storeValue("mqtt_topic", mqttBaseTopic.getValue());
+        delay(200);
+    }
+
     // Init Mqtt
     mqtt = std::unique_ptr<Mqtt>{
         new Mqtt{
-            {mqttServerHost.getValue()},
-            {mqttUsername.getValue()},
-            {mqttPassword.getValue()},
+            eepromWrapper.readValue("mqtt_host"),
+            eepromWrapper.readValue("mqtt_username"),
+            eepromWrapper.readValue("mqtt_password"),
             {"ESP32_" + std::to_string(ESP.getEfuseMac())},
-            {mqttBaseTopic.getValue()},
+            eepromWrapper.readValue("mqtt_topic"),
             client }};
 
     #ifdef FLASH_SENSOR_TYPE
@@ -114,6 +135,7 @@ void setup()
     Serial.println("Init done.");
 
     Serial.printf("Number of sensors registered: %d\n", sensorRegistry->size());
+    ledOff();
 }
 
 void loop()
@@ -123,10 +145,12 @@ void loop()
     // auto sleep =  500;
     Serial.printf("sleep for %d ms\n",sleep);
 
+    ledOn();
     attachedSensor->update();
     Serial.println(attachedSensor->getValue());
     mqtt->publish("matthi", attachedSensor->getValue());
     mqtt->loop();
+    ledOff();
 
     delay((uint32_t)sleep);
 }

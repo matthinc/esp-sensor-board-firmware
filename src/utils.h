@@ -10,4 +10,12 @@ namespace {
         esp_deep_sleep_start();
     }
 
+    void ledOn() {
+        digitalWrite(5, 1);
+    }
+
+    void ledOff() {
+        digitalWrite(5, 0);
+    }
+
 }

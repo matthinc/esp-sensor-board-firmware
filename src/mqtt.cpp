@@ -49,6 +49,9 @@ void Mqtt::messageReceived(String &topic, String &payload)
 bool Mqtt::reconnect() {
     int reconnectAttempts = 0;
 
+    std::string logMessage{"Reconnect as " + username + " : " + password};
+    Serial.println(logMessage.c_str());
+
     while (!client.connect(clientId.c_str(), username.c_str(), password.c_str()))
     {
         delay(500);
