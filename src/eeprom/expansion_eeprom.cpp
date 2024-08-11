@@ -1,11 +1,12 @@
-#include "expansion_eeprom.h"
+#include "eeprom/expansion_eeprom.h"
+#include <Arduino.h>
 
 ExpansionEeprom::ExpansionEeprom(int addr, gpio_num_t sda, gpio_num_t scl) : addr { addr }
 {
     Wire.begin(sda, scl);
 }
 
-void ExpansionEeprom::write(char daddr, char data) const
+int ExpansionEeprom::write_byte(int daddr, char data) const
 {
     Wire.beginTransmission(addr);
     Wire.write(daddr);
@@ -13,9 +14,10 @@ void ExpansionEeprom::write(char daddr, char data) const
     Wire.endTransmission();
 
     delay(100);
+    return daddr + 1;
 }
 
-std::tuple<bool, char> ExpansionEeprom::read(char daddr) const
+std::tuple<bool, char> ExpansionEeprom::read(int daddr) const
 {
     Wire.beginTransmission(addr);
     Wire.write(daddr);
