@@ -1,3 +1,4 @@
+#pragma once
 
 #include <map>
 #include <functional>
@@ -23,8 +24,8 @@ private:
 };
 
 using SensorId = uint8_t;
-using SensorCtor = std::function<std::unique_ptr<Sensor>()>;
-using SensorRegistry  = Registry<SensorId, Sensor, SensorCtor>;
+using SensorCtor = std::function<std::unique_ptr<BaseSensor>()>;
+using SensorRegistry  = Registry<SensorId, BaseSensor, SensorCtor>;
 
 using SleepBehaviorId = uint8_t;
 using SleepBehaviorCtor = std::function<std::unique_ptr<SleepBehavior>()>;
@@ -54,14 +55,3 @@ bool Registry<KeyType, RegisterType, CtorFunction>::registerItem(
     this->registry[key] = ctor;
     return true;
 }
-
-// class SensorRegisterHelper {
-
-// public:
-//     SensorRegisterHelper() {};
-
-//     static bool registerSensor(SensorId sensorId, SensorCtor ctor);
-
-// };
-
-// extern std::unique_ptr<SensorRegistry> registry;
