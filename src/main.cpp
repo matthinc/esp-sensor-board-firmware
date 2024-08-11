@@ -109,17 +109,6 @@ void setup()
             eepromWrapper.readValue("mqtt_topic"),
             client }};
 
-    #ifdef FLASH_SENSOR_TYPE
-    SensorHeader h{SENSOR_TYPE_DS18B20, SLEEP_TYPE_INTERVAL, 100, 131415};
-    writeSensorHeaderToEeprom(h, eeprom);
-    Serial.println("write sensor id to eprom");
-    h.print();
-    #endif
-
-    SensorHeader header = readSensorHeader(eeprom);
-    header.print();
-
-
     // Choose sensor
     bool ret;
     std::tie(ret, attachedSensor) = sensorRegistry->createItem(eepromState->getSensorId());
